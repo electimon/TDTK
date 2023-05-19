@@ -1,0 +1,21 @@
+{
+    "enable": { 
+        "command": "svc wifi enable",
+        "check": "cmd wifi status",
+        "expected": "Wifi is enabled",
+        "timeout": 2
+    },
+    "disable": { 
+        "command": "svc wifi disable",
+        "check": "cmd wifi status",
+        "expected": "Wifi is disabled",
+        "timeout": 2
+    },
+    "connect": {
+        "command": "cmd wifi connect-network",
+        "parameters": [],
+        "check": "cmd wifi status | sed '4q;d'",
+        "expected": "Wifi is connected to",
+        "depends": "enable"
+    }
+}
