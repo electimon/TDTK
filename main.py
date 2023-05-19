@@ -20,6 +20,8 @@ def main():
     runner = TestRunner(args)
     if runner:
         runner.start()
+    else:
+        print("The Slade arc begins...")
 
 if __name__ == "__main__":
     main()

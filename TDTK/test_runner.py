@@ -5,8 +5,8 @@ from TDTK.adb import ADB
 
 class TestRunner:
     def __init__(self, args) -> None:
-        if not args or args.test_plan is None:
-            return None
+        if not args or not args.test_plan :
+            return
         self.test_plan = args.test_plan
         self.debug = args.debug
         self.total_tests = 0
@@ -15,6 +15,9 @@ class TestRunner:
         self.errors = 0
         self.logger = Logger(self)
         self.modules = Modules()
+        if len(self.modules.available_modules) == 0:
+            self.logger.log("No modules were detected nor loaded!", "plainFailure")
+            self.errors += 1
         self.adb = ADB()
         
     def start(self): 
@@ -34,9 +37,9 @@ class TestRunner:
         self.adb.device.root()
         
         # Load the test suite from the JSON file
-        with open(self.test_plan, "r") as file:
+        with open(self.test_plan, "r") as test_plan_file:
             try:
-                self.test_plan = json.load(file)
+                self.test_plan = json.load(test_plan_file)
             except json.JSONDecodeError:
                 self.logger.log("Invalid test plan json provided, bailing!", type="fatal")
                 self.errors += 1
@@ -44,13 +47,17 @@ class TestRunner:
                 return
 
         for test in self.test_plan:
-            if self.is_valid(test):
+            if self.validate_test(test):
                 test_name = test.get("test_name")
                 fq_name = test.get("module").split(".")
-                module = self.modules.available_modules.get(fq_name[0])
+                if len(fq_name) == 3:
+                    module_name = ".".join([fq_name[0], fq_name[1]])
+                else:
+                    module_name = fq_name[0]
+                module = self.modules.available_modules.get(module_name)
                 self.logger.log(f'Running test: {test_name}', "section")
                 if module:
-                    if module.run(fq_name[1], test.get("parameters")):
+                    if module.run(fq_name[-1], test.get("parameters")):
                         self.logger.log(f"Test {test_name} completed successfully.", type="result")
                         self.tests_passed += 1
                     else:
@@ -64,7 +71,7 @@ class TestRunner:
                      
         self.finish()
     
-    def is_valid(self, test):
+    def validate_test(self, test):
         name = test.get("test_name", None)
         module = test.get("module", None)
         if name and module:
@@ -76,7 +83,9 @@ class TestRunner:
     
     def finish(self):
         self.logger.log("Test Execution Summary:", type="summarySpaced")
-        self.logger.log(f"Total tests: {self.total_tests}", type="result")
+        self.logger.log(f"Total parsed tests: {self.total_tests}", type="result")
         self.logger.log(f"Passed: {self.tests_passed}", type="result")
-        self.logger.log(f"Failed: {self.tests_failed}", type="failure")
-        self.logger.log(f"Errors: {self.errors}", type="failure")
+        if self.tests_failed > 0:
+            self.logger.log(f"Failed: {self.tests_failed}", type="failure")
+        if self.errors > 0:
+            self.logger.log(f"Errors: {self.errors}", type="failure")

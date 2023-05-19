@@ -1,0 +1,8 @@
+{
+    "mp3": {
+        "command": "svc wifi enable",
+        "check": "cmd wifi status",
+        "expected": "Wifi is enabled",
+        "timeout": 2        
+    }
+}

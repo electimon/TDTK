@@ -23,30 +23,43 @@ class Modules:
         self.available_modules = {}
         self.load_modules()
 
-    def load_modules(self):
-        module_dir = os.path.join(os.path.dirname(__file__), "modules")
-        for file in os.scandir(module_dir):
-            if file.is_file() and file.name.endswith('.json'):
-                filepath = os.path.join(module_dir, file.name)
-                with open(filepath) as file:
-                    submodules = {}
-                    module_data = json.load(file)
-                    for key in module_data:
-                        submodule = module_data[key]
-                        result = is_valid_module(submodule)
-                        case = {
-                            0: lambda: (
-                                logger.log(f'Method "{key}" in {os.path.relpath(filepath)} has been validated!', "debug"),
-                                submodules.update({key: SubModule(submodule)})
-                            ),
-                            1: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is not a dict, it has been skipped!', "plainFailure"),
-                            2: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is missing a command, it has been skipped!', "plainFailure"),
-                            3: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is missing an expected output, it has been skipped!', "plainFailure")
-                        }
-                        result_func = case.get(result, lambda: None)
-                        result_func()
-                    if len(submodules) > 1:
-                        self.available_modules.update({Path(filepath).stem: (Module(submodules))})
+    def load_module(self, filepath):
+        with open(filepath) as entry:
+            submodules = {}
+            module_data = json.load(entry)
+            for key in module_data:
+                submodule = module_data[key]
+                result = is_valid_module(submodule)
+                case = {
+                    0: lambda: (
+                        logger.log(f'Method "{key}" in {os.path.relpath(filepath)} has been validated!', "debug"),
+                        submodules.update({key: SubModule(submodule)})
+                    ),
+                    1: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is not a dict, it has been skipped!', "plainFailure"),
+                    2: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is missing a command, it has been skipped!', "plainFailure"),
+                    3: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is missing an expected output, it has been skipped!', "plainFailure")
+                }
+                result_func = case.get(result, lambda: None)
+                result_func()
+            container = os.path.basename(os.path.dirname(filepath))
+            if len(submodules) > 0:
+                if "modules" in container:
+                    self.available_modules[Path(filepath).stem] = Module(submodules)
+                else:
+                    self.available_modules[f"{container}.{Path(filepath).stem}"] = Module(submodules)
+
+    def load_modules(self, dir=None):
+        if not dir:
+            dir = Path(__file__).parent / "modules"
+        if not Path(dir).is_dir():
+            return
+        for entry in os.scandir(dir):
+            if entry.is_file() and entry.name.endswith('.json'):
+                logger.log(f'Scanning file {entry.name} for modules.', "debug")
+                self.load_module(os.path.join(dir, entry.name))
+            elif entry.is_dir():
+                self.load_modules(entry.path)
+        logger.log(f"Available modules, {self.available_modules}", "debug")
 
 class SubModule:
     def __init__(self, data):
@@ -63,6 +76,7 @@ class Module:
         self.submodules = submodules
     
     def run(self, submodule_name, parameters):
+        logger.log(f"Attempting to run {submodule_name}", "debug")
         submodule = self.get_submodule(submodule_name)
         if submodule:
             if submodule.depends:
