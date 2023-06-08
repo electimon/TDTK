@@ -1,8 +1,8 @@
 {
     "mp3": {
-        "command": "svc wifi enable",
-        "check": "cmd wifi status",
-        "expected": "Wifi is enabled",
-        "timeout": 2        
+        "command": "mv /sdcard/TDTK/test.mp3 /sdcard/",
+        "expected": 0,
+        "timeout": 2,
+        "file": "test.mp3"
     }
 }

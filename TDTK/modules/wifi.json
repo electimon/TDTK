@@ -14,6 +14,7 @@
     "connect": {
         "command": "cmd wifi connect-network",
         "parameters": [],
+        "suggestedParameters": ["SSID", "Encryption Type", "Password"],
         "check": "cmd wifi status | sed '4q;d'",
         "expected": "Wifi is connected to",
         "depends": "enable"

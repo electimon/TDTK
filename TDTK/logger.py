@@ -1,7 +1,6 @@
 # Logger for TDTK
 from datetime import datetime
 from time import time
-import sys
 
 class LogColors:
     INFO = "\033[96m"
@@ -47,13 +46,13 @@ class Logger:
         else:
             self.debug = False
     
-    def log(self, message, type=""):
+    def log(self, message: str, type: str = ""):
         if not self.debug == True and type == "debug":
             return
         log_type = self.types.get(type, {"prefix": "", "indent": 0, "color": LogColors.INFO, "found": False})
         if not log_type.get("found", True):
             self.log(f'Log Type for message: "{message}" was not defined.', type="failure")
-        if log_type == "ratelimited":
+        if type == "ratelimited":
             current_time = time()
             if current_time - self.ratelimit_last_log_time < 1 / self.ratelimit_threshold:
                 return
@@ -65,13 +64,15 @@ class Logger:
         suffix = log_type.get("suffix", "")
         print(f"{color}{indent}{prefix}{message}{suffix}{LogColors.END}")
 
-    def log_summary(self, total_tests, passed, failed, errors):
-        self.log("Test Execution Summary:", type="summary")
-        self.log(f"- Total tests: {total_tests}", type="summary")
-        self.log(f"- Passed: {passed}", type="summary")
-        self.log(f"- Failed: {failed}", type="summary")
-        self.log(f"- Errors: {errors}", type="summary")
-        
+    def log_summary(self, total_tests: int, passed: int, failed: int, errors: int):
+        self.log("Test Execution Summary:", type="summarySpaced")
+        self.log(f"Total parsed tests: {total_tests}", type="result")
+        self.log(f"Passed: {passed}", type="result")
+        if failed > 0:
+            self.log(f"Failed: {failed}", type="failure")
+        if errors > 0:
+            self.log(f"Errors: {errors}", type="failure")
+
     def start(self):
         self.log("Terra Debug Tool Kit (TDTK) - Test Execution Report", type="plainSpaced")
         if hasattr(self.caller, "test_plan"):
