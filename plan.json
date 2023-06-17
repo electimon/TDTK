@@ -9,7 +9,15 @@
     ]
   },
   {
-    "test_name": "MP3 Playback",
-    "module": "audio.playback.mp3"
+    "test_name": "Install CQA Test",
+    "module": "app.cqa.install"
+  },
+  {
+    "test_name": "Install Device Info App",
+    "module": "app.deviceinfo.install"
+  },
+  {
+    "test_name": "Launch CQA Test",
+    "module": "cqa.launch"
   }
 ]

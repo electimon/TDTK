@@ -17,6 +17,7 @@
         "suggestedParameters": ["SSID", "Encryption Type", "Password"],
         "check": "cmd wifi status | sed '4q;d'",
         "expected": "Wifi is connected to",
-        "depends": "enable"
+        "depends": "enable",
+        "timeout": 10
     }
 }

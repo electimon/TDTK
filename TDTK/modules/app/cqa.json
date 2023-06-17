@@ -1,0 +1,14 @@
+{
+    "launch": {
+        "command": "am start -n com.motorola.motocit/.Test_Main",
+        "parameters": [],
+        "expected": ""
+    },
+    "install": {
+        "type": "app-install-priv",
+        "parameters": [],
+        "expected": "",
+        "overwrite": 0,
+        "file": "cqatest.apk"
+    }
+}

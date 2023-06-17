@@ -2,7 +2,10 @@ from typing import Optional
 import adbutils
 from TDTK.logger import Logger
 import time
+from pathlib import Path
 logger = Logger(None)
+thisPath = Path(__file__).parent
+filesPath = thisPath / "files"
 
 class ADB:
     _instance = None
@@ -25,8 +28,21 @@ class ADB:
         check: Optional[str],
         expected: str,
         parameters: Optional[list[str]],
+        type: Optional[str],
+        file: Optional[str],
         timeout: Optional[int] = 2,
+        overwrite: Optional[bool] = False,
     ) -> bool:
+        logger.log(f"adb run type is {type}", type="debug")
+        if not self.root():
+            logger.log(f"Failed to restart adb as root!", type="plainFailure")
+            return False
+        if type == "app-install-priv":
+            logger.log(f"Running install-app routine", type="debug")
+            return self.run_app_install(priv=True, file=file, overwrite=overwrite)
+        if type == "app-install":
+            logger.log(f"Running install-app routine", type="debug")
+            return self.run_app_install(file=file)
         if not timeout:
             timeout = 2
         if parameters:
@@ -39,7 +55,71 @@ class ADB:
             ret = self.check(check, expected, timeout)
             return ret
         return self.acceptable(ret, expected)
-        
+
+    def run_app_install(
+        self,
+        file: str,
+        priv: Optional[bool] = False,
+        overwrite: Optional[bool] = False,
+    ):
+        ret = self.remount()
+        if not ret:
+            logger.log(f"Failed to remount device as RW!", type="plainFailure")
+            return False
+        if priv:
+            logger.log(f"Running install-app-priv routine", type="debug")
+            self.run_app_install_priv(file, overwrite)
+        else:
+            logger.log(f"Running adb install now!", type="debug")
+            self.device.install(str(filesPath / file), nolaunch=True, silent=True)
+        return True
+
+    def run_app_install_priv(
+        self,
+        file: str,
+        overwrite: Optional[bool] = False,
+    ):
+        logger.log(f"In run_app_install_priv", type="debug")
+        file = str(file)
+        if not overwrite:
+            logger.log(f"Not overwriting!", type="debug")
+            command = f'[ -f /product/priv-app/{file.split(".")[0]}/{file} ]'
+            logger.log(f"File check command is {command}", type="debug")
+            ret = self.device.shell2(command)
+            logger.log(f"Returncode for check command is {ret.returncode}", type="debug")
+            if ret.returncode == 0:
+                logger.log("App already on filesystem, skipping installation...", type="result")
+                return True
+        else:
+            logger.log(f"Overwriting!", type="debug")
+        ret = self.device.shell2(f'mkdir /product/priv-app/{file.split(".")[0]}')
+        if not ret.returncode == 0:
+            return False
+        ret = self.device.shell2(f'mv /sdcard/TDTK/{file} /product/priv-app/{file.split(".")[0]}/')
+        if not ret.returncode == 0:
+            return False
+
+    def _remount(self):
+        return self.device.shell2("remount")
+
+    def remount(self, bail: Optional[bool] = False):
+        ret = self._remount()
+        if ret == "inaccessible":
+            return False
+        if ret == "root":
+            if bail:
+                return False
+            if not self.root():
+                return False
+            ret = self.remount(bail=True)
+        return True
+
+    def root(self):
+        ret = self.device.root()
+        if ret == "cannot run as root":
+            return False
+        return True
+
     def check(self,
               check: str,
               expected,
@@ -82,5 +162,8 @@ class ADB:
     
     def cleanup(self) -> int:
         command = "rm -rf /sdcard/TDTK"
-        ret = self.device.shell2(command)
+        try:
+            ret = self.device.shell2(command)
+        except:
+            return 1
         return ret.returncode

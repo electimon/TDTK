@@ -12,7 +12,7 @@ thisPath = Path(__file__).parent
 def is_valid_module(submodule):
     if not isinstance(submodule, dict):
         return 1
-    if not submodule.get("command"):
+    if not submodule.get("command") and not submodule.get("type"):
         return 2
     if submodule.get("expected") is None:
         return 3
@@ -76,7 +76,7 @@ class SubModule:
             else:
                 logger.log(f'This module requires a file, "{self.file}", which was not found, skipping!', "plainFailure")
                 return False
-        ret = adb.run(self.__dict__.get("command"), self.__dict__.get("check"), self.__dict__.get("expected"), parameters, self.__dict__.get("timeout"))
+        ret = adb.run(command=self.__dict__.get("command"), check=self.__dict__.get("check"), expected=self.__dict__.get("expected"), parameters=parameters, timeout=self.__dict__.get("timeout"), type=self.__dict__.get("type"), file=self.__dict__.get("file"), overwrite=self.__dict__.get("overwrite"))
         return ret
 
 class Module:
@@ -87,6 +87,7 @@ class Module:
         logger.log(f"Attempting to run {submodule_name}", "debug")
         submodule = self.get_submodule(submodule_name)
         if not submodule:
+            logger.log(f'Submodule "{submodule_name}" not found!', "failure")
             return False
         if submodule.depends and len(submodule.depends.split(".")) < 2:
             ret = self.run(submodule.depends, None)

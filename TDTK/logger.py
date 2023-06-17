@@ -79,4 +79,4 @@ class Logger:
             self.log(f'Test Plan: {self.caller.test_plan}', type="plain")
         if hasattr(self.caller, "device"):
             self.log(f'Device: {self.caller.device.serial}', type="plain")
-        self.log(f'Date: {datetime.today().strftime("%b %y, %Y")}', type="plain")
+        self.log(f'Date: {datetime.today().strftime("%b %d, %Y")}', type="plain")

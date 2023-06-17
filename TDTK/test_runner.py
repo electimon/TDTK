@@ -38,8 +38,13 @@ class TestRunner:
         self.logger.start()
         
         # Make sure the device is in root mode
-        self.adb.device.root()
-        
+        ret = self.adb.device.root()
+        if "Developer" in ret:
+            self.logger.log("Please enable Rooted ADB Debugging, bailing!", type="plainFailure")
+            self.errors += 1
+            self.finish()
+            return
+
         # Load the test suite from the JSON file
         self.load_test_suite()
 
@@ -53,7 +58,8 @@ class TestRunner:
     
     def finish(self):
         self.logger.log_summary(self.total_tests, self.tests_passed, self.tests_failed, self.errors)
-        self.adb.cleanup() # Don't care if failed or not.
+        if self.adb.device:
+            self.adb.cleanup() # Don't care if failed or not.
         sys.exit(1)
     
     def run_test(self, test: dict):

@@ -1,0 +1,8 @@
+{
+    "install": {
+        "type": "app-install",
+        "parameters": [],
+        "expected": "",
+        "file": "deviceinfo.apk"
+    }
+}
