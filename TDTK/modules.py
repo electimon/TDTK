@@ -9,6 +9,7 @@ logger = Logger(None)
 adb = ADB()
 thisPath = Path(__file__).parent
 
+
 def is_valid_module(submodule):
     if not isinstance(submodule, dict):
         return 1
@@ -63,26 +64,35 @@ class SubModule:
         self.__dict__.update(data)
         self.depends = data.get("depends")
         self.file = Path(data.get("file")) if data.get("file") else None
-    
+
     def run(self, parameters: Optional[list[str]]):
-        logger.log(f'Command is "{self.__dict__.get("command")}", check is "{self.__dict__.get("check")}", expected is "{self.__dict__.get("expected")}", timeout is "{self.__dict__.get("timeout")}"', "debug")
+        logger.log(f'Command is "{getattr(self, "command", None)}", check is "{getattr(self, "check", None)}", expected is "{getattr(self, "expected", None)}", timeout is "{getattr(self, "timeout", None)}"', "debug")
         if self.file:
-            filePath = thisPath / "files" / self.file
-            if filePath.is_file():
-                logger.log(f'Pushing file {filePath} to device!', "debug")
-                ret = adb.push(filePath)
-                if not ret > 0: # This function from adbutils returns file size of what it pushed.
-                    logger.log(f'Failed to push "{filePath}"!', 'plainFailure')
+            file_path = thisPath / "files" / self.file
+            if file_path.is_file():
+                logger.log(f'Pushing file {file_path} to device!', "debug")
+                ret = adb.push(file_path)
+                if ret <= 0:
+                    logger.log(f'Failed to push "{file_path}"!', 'plainFailure')
             else:
                 logger.log(f'This module requires a file, "{self.file}", which was not found, skipping!', "plainFailure")
                 return False
-        ret = adb.run(command=self.__dict__.get("command"), check=self.__dict__.get("check"), expected=self.__dict__.get("expected"), parameters=parameters, timeout=self.__dict__.get("timeout"), type=self.__dict__.get("type"), file=self.__dict__.get("file"), overwrite=self.__dict__.get("overwrite"))
+        ret = adb.run(
+            command=getattr(self, "command", None),
+            check=getattr(self, "check", None),
+            expected=getattr(self, "expected", None),
+            parameters=parameters,
+            timeout=getattr(self, "timeout", None),
+            command_type=getattr(self, "type", None),
+            file=self.file,
+            overwrite=getattr(self, "overwrite", None)
+        )
         return ret
 
 class Module:
     def __init__(self, submodules):
         self.submodules = submodules
-    
+
     def run(self, submodule_name: str, parameters: Optional[list[str]]):
         logger.log(f"Attempting to run {submodule_name}", "debug")
         submodule = self.get_submodule(submodule_name)
@@ -94,6 +104,6 @@ class Module:
             if not ret:
                 return ret
         return submodule.run(parameters)
-    
+
     def get_submodule(self, name: str):
         return self.submodules.get(name, None)
