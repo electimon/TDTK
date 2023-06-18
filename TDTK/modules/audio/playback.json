@@ -3,6 +3,6 @@
         "command": "mv /sdcard/TDTK/test.mp3 /sdcard/",
         "expected": 0,
         "timeout": 2,
-        "file": "test.mp3"
+        "files": ["test.mp3"]
     }
 }

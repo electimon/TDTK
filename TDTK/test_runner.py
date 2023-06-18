@@ -7,6 +7,7 @@ from TDTK.adb import ADB
 class TestRunner:
     def __init__(self, args):
         self.args = args
+        self.debug = args.debug
         self.logger = Logger(self)
         self.modules = Modules()
         self.adb = ADB()
@@ -53,22 +54,49 @@ class TestRunner:
             if self.validate_test(test):
                 self.run_test(test)
 
-    def validate_test(self, test):
-        name = test.get("test_name")
-        module = test.get("module")
-        if name and module:
-            self.logger.log(f'Test "{name}" in the test plan has been deemed valid!', type="debug")
-            return True
-        self.logger.log(f'Test "{name}" in the test plan has been deemed invalid and has been skipped!', type="failure")
-        self.errors += 1
-        return False
+    def validate_test(self, test: dict):
+        name = test.get("test_name", None)
+        module = test.get("module", None)
+        self.logger.log(f'Running test: "{name}"', "section")
+
+        if not name:
+            self.logger.log("Test is missing the 'test_name' field!", type="failure")
+            self.errors += 1
+            return False
+        if not module:
+            self.logger.log(f"Test '{name}' is missing the 'module' field!", type="failure")
+            self.errors += 1
+            return False
+
+        module_parts = module.split(".")
+        if len(module_parts) < 2:
+            self.logger.log(f"Test '{name}' has an invalid module format. Expected 'module.submodule' or 'category.module.submodule' format!", type="failure")
+            self.errors += 1
+            return False
+
+        module_name = ".".join(module_parts[:-1])
+        submodule_name = module_parts[-1]
+        module = self.modules.available_modules.get(module_name)
+        if not module:
+            self.logger.log(f"Module '{module_name}' not found for test '{name}'!", type="failure")
+            self.errors += 1
+            return False
+
+        submodule = module.get_submodule(submodule_name)
+        if not submodule:
+            self.logger.log(f"Submodule '{submodule_name}' not found in module '{module_name}' for test '{name}'!", type="failure")
+            self.errors += 1
+            return False
+
+        self.logger.log(f"Test '{name}' in the test plan has been deemed valid!", type="debug")
+        return True
+
 
     def run_test(self, test):
         test_name = test.get("test_name")
         module_name, submodule_name = test.get("module").rsplit(".", 1)
         module = self.modules.available_modules.get(module_name)
 
-        self.logger.log(f'Running test: "{test_name}"', "section")
         if module:
             ret = module.run(submodule_name, test.get("parameters"))
             if ret is True:

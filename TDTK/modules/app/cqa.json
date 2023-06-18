@@ -8,7 +8,7 @@
         "type": "app-install-priv",
         "parameters": [],
         "expected": "",
-        "overwrite": 0,
-        "file": "cqatest.apk"
+        "overwrite": 1,
+        "files": ["cqatest.apk", "default-permissions-com.motorola.motocit.xml", "privapp-permissions-com.motorola.motocit.xml"]
     }
 }

@@ -3,6 +3,6 @@
         "type": "app-install",
         "parameters": [],
         "expected": "",
-        "file": "deviceinfo.apk"
+        "files": ["deviceinfo.apk"]
     }
 }

@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 import adbutils
 from TDTK.logger import Logger
@@ -26,7 +27,7 @@ class ADB:
         expected: str,
         parameters: Optional[list[str]],
         command_type: Optional[str],
-        file: Optional[str],
+        files: Optional[list[str]],
         timeout: Optional[int] = 2,
         overwrite: Optional[bool] = False,
     ) -> bool:
@@ -35,11 +36,11 @@ class ADB:
             logger.log(f"Failed to restart adb as root!", type="plainFailure")
             return False
         if command_type == "app-install-priv":
-            logger.log(f"Running install-app routine", type="debug")
-            return self.run_app_install(priv=True, file=file, overwrite=overwrite)
+            logger.log(f"Running install-app-priv routine", type="debug")
+            return self.run_app_install_priv(files[0], files[1:], overwrite)
         if command_type == "app-install":
-            logger.log(f"Running install-app routine", type="debug")
-            return self.run_app_install(file=file)
+            logger.log(f"Running install-app routine, files are {files}", type="debug")
+            return self.run_app_install(files[0])
         if not timeout:
             timeout = 2
         if not command:
@@ -50,7 +51,7 @@ class ADB:
         logger.log(f"Parameters: {parameters}", type="debug")
         ret = self.device.shell2(command)
         logger.log(f"Command: {command}", type="debug")
-        logger.log(f"Command Output: {ret}", type="debug")
+        logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="debug")
         if check:
             ret = self.check(check, expected, timeout)
             return ret
@@ -59,16 +60,10 @@ class ADB:
     def run_app_install(
         self,
         file: str,
-        priv: Optional[bool] = False,
-        overwrite: Optional[bool] = False,
     ) -> bool:
         ret = self.remount()
         if not ret:
-            logger.log(f"Failed to remount device as RW!", type="plainFailure")
             return False
-        if priv:
-            logger.log(f"Running install-app-priv routine", type="debug")
-            self.run_app_install_priv(file, overwrite)
         else:
             logger.log(f"Running adb install now!", type="debug")
             self.device.install(str(filesPath / file), nolaunch=True, silent=True)
@@ -76,37 +71,96 @@ class ADB:
 
     def run_app_install_priv(
         self,
-        file_path: str,
+        apk_name: str,
+        additional_files: list[str],
         overwrite: Optional[bool] = False,
     ):
         logger.log(f"In run_app_install_priv", type="debug")
-        file_path = str(file_path)
+        ret = self.remount()
+        if not ret:
+            return False
+        apk_name = str(apk_name)
         if not overwrite:
-            logger.log(f"Not overwriting!", type="debug")
-            command = f'[ -f /product/priv-app/{file_path.split(".")[0]}/{file_path} ]'
-            logger.log(f"File check command is {command}", type="debug")
-            ret = self.device.shell2(command)
-            logger.log(f"Returncode for check command is {ret.returncode}", type="debug")
-            if ret.returncode == 0:
-                logger.log("App already on filesystem, skipping installation...", type="result")
+            for file in additional_files:
+                file = str(file)
+                logger.log(f"Additional file found! {file}", type="debug")
+                if "privapp-permissions" in file:
+                    if self.check_file_existence(f'/product/etc/permissions/{file}'):
+                        continue
+                    else:
+                        if not self.move_file(file, f'/product/etc/permissions/{file}', create_path=False):
+                            return False
+                if "default-permissions" in file:
+                    if self.check_file_existence(f'/product/etc/default-permissions/{file}'):
+                        continue
+                    else:
+                        if not self.move_file(file, f'/product/etc/default-permissions/{file}', create_path=False):
+                            return False                   
+            if self.check_file_existence(f'/product/priv-app/{apk_name.split(".")[0]}/{apk_name}'):
                 return True
         else:
+            for file in additional_files:
+                file = str(file)
+                if "default-permissions" in file:
+                    if not self.move_file(file, f'/product/etc/default-permissions/{file}', create_path=False):
+                        return False
+                if "privapp-permissions" in file:
+                    if not self.move_file(file, f'/product/etc/permissions/{file}', create_path=False):
+                        return False
             logger.log(f"Overwriting!", type="debug")
-        ret = self.device.shell2(f'mkdir /product/priv-app/{file_path.split(".")[0]}')
-        if ret.returncode != 0:
+
+        if not self.move_file(apk_name, f'/product/priv-app/{apk_name.split(".")[0]}/'):
             return False
-        ret = self.device.shell2(f'mv /sdcard/TDTK/{file_path} /product/priv-app/{file_path.split(".")[0]}/')
+        return True
+
+    def move_file(self, source_path: str, destination_path: str, create_path: Optional[bool] = True) -> bool:
+        if create_path:
+            ret = self.device.shell2(f'mkdir -p {destination_path} && chmod 755 {destination_path}')
+            logger.log(f"Creating directory {destination_path} with 755 permissions", type="debug")
+            if ret.returncode != 0:
+                return False
+        logger.log(f"Moving file /sdcard/TDTK/{source_path} to {destination_path}", type="debug")
+        ret = self.device.shell2(f'mv /sdcard/TDTK/{source_path} {destination_path}')
         if ret.returncode != 0:
+            logger.log(f"Failed to move file /sdcard/TDTK/{source_path} to {destination_path}, output: {ret.output}", type="plainFailure")
             return False
+        root, ext = os.path.splitext(destination_path)
+        if not ext:
+            destination_path = f"{destination_path}{source_path}"
+        ret = self.device.shell2(f'chown root:root {destination_path} && chmod 644 {destination_path}')
+        if ret.returncode != 0:
+            logger.log(f"Failed to change ownership of {destination_path}, output: {ret.output}", type="plainFailure")
+            return False
+        logger.log(f"Changing ownership for file {destination_path}", type="debug")
+        return True
+
+    def check_files_existence(self, file_paths: list[str]) -> bool:
+        for file_path in file_paths:
+            if not self.check_file_existence(file_path):
+                return False
+        return True
+
+    def check_file_existence(self, file_path: str) -> bool:
+        command = f'[ -f {file_path} ]'
+        logger.log(f"File check command is {command}", type="debug")
+        ret = self.device.shell2(command)
+        logger.log(f"Return code for check command is {ret.returncode}", type="debug")
+        if ret.returncode == 0:
+            logger.log(f'File {file_path} already exists on the device, skipping...', type="result")
+            return True
+        return False
 
     def remount(self, bail: Optional[bool] = False) -> bool:
         ret = self.device.shell2("remount")
         if ret == "inaccessible":
+            logger.log(f"Failed to remount device as RW!", type="plainFailure")
             return False
         if ret == "root":
             if bail:
+                logger.log(f"Failed to remount device as RW!", type="plainFailure")
                 return False
             if not self.root():
+                logger.log(f"Failed to remount device as RW!", type="plainFailure")
                 return False
             ret = self.remount(bail=True)
         return True
@@ -139,7 +193,7 @@ class ADB:
             return False
         ret = self.device.shell2(check)
         logger.log(f"Command: {check}", type="debug")
-        logger.log(f"Command Output: {ret}", type="debug")
+        logger.log(f"Command Output: {ret.output}", type="debug")
         return ret.returncode
 
     def acceptable(self, ret, expected) -> bool:
