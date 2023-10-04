@@ -1,0 +1,11 @@
+{
+    "wake": {
+        "command": "input keyevent KEYCODE_WAKEUP",
+        "expected": 0
+    },
+    "unlock": {
+        "command": "input keyevent KEYCODE_MENU",
+        "expected": 0,
+        "depends": "wake"
+    }
+}

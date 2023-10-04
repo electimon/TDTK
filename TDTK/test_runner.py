@@ -11,13 +11,25 @@ class TestRunner:
         self.logger = Logger(self)
         self.modules = Modules()
         self.adb = ADB()
+        self.total_tests = 0
+        self.tests_passed = 0
+        self.tests_failed = 0
+        self.errors = 0
 
     def start(self):
         self.setup_logger()
         self.detect_device()
         self.load_modules()
-        self.load_test_suite()
-        self.run_tests()
+        if self.args.test_plan:
+            self.load_test_suite()
+            self.run_tests()
+        elif self.args.module:
+            test = {
+                "test_name": self.args.module,
+                "module": self.args.module
+            }
+            if self.validate_test(test):
+                self.run_test(test)
         self.finish()
 
     def setup_logger(self):
@@ -45,11 +57,6 @@ class TestRunner:
                 self.finish()
 
     def run_tests(self):
-        self.total_tests = 0
-        self.tests_passed = 0
-        self.tests_failed = 0
-        self.errors = 0
-
         for test in self.test_plan:
             if self.validate_test(test):
                 self.run_test(test)

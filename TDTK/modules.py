@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from pathlib import Path
 from typing import Optional
 from TDTK.logger import Logger
@@ -37,16 +38,21 @@ class Modules:
         self.load_modules()
 
     def load_module(self, filepath: Path):
+        module_name = filepath.stem
         with open(filepath) as entry:
             submodules = {}
-            module_data = json.load(entry)
+            try:
+                module_data = json.load(entry)
+            except:
+                logger.log(f'Failed to load {filepath}, it has been skipped!', 'plainFailure')
+                return
             for key in module_data:
                 submodule = module_data[key]
                 result = is_valid_module(submodule)
                 case = {
                     ValidationResult.VALID: lambda: (
                         logger.log(f'Method "{key}" in {os.path.relpath(filepath)} has been validated!', "debug"),
-                        submodules.update({key: SubModule(submodule)})
+                        submodules.update({key: SubModule(module_name, submodule)})
                     ),
                     ValidationResult.NOT_DICT: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is not a dict, it has been skipped!', "plainFailure"),
                     ValidationResult.MISSING_COMMAND_OR_TYPE: lambda: logger.log(f'Method "{key}" in {os.path.relpath(filepath)} is missing a command or type, it has been skipped!', "plainFailure"),
@@ -56,9 +62,9 @@ class Modules:
                 }
                 result_func = case.get(result, lambda: None)
                 result_func()
-            container = filepath.stem if filepath.parent.stem.endswith('modules') else filepath.parent.stem + '.' + filepath.stem
+            container = filepath.stem if filepath.parent.stem.endswith('modules') else filepath.parent.stem + '.' + module_name
             if submodules:
-                self.available_modules[container] = Module(submodules)
+                self.available_modules[container] = Module(self, module_name, submodules)
 
     def load_modules(self, dir: Path = None):
         if not dir:
@@ -73,26 +79,45 @@ class Modules:
                 self.load_modules(entry)
         logger.log(f"Available modules, {self.available_modules}", "debug")
 
+    def run(self, module_name: str, submodule_name: str, parameters: Optional[list[str]]):
+        module = self.available_modules.get(module_name)
+        if module:
+            return module.run(submodule_name, parameters)
+        else:
+            logger.log(f'Module "{module_name}" not found!', "failure")
+            return False
+
 class SubModule:
-    def __init__(self, data):
+    def __init__(self, name, data):
         self.__dict__.update(data)
         self.depends = data.get("depends")
         self.files = [Path(file) for file in data.get("files", [])]  # Store multiple files as a list of Paths
+        self.parent_name = name
 
     def run(self, parameters: Optional[list[str]]):
-        logger.log(f'Command is "{getattr(self, "command", None)}", check is "{getattr(self, "check", None)}", expected is "{getattr(self, "expected", None)}", timeout is "{getattr(self, "timeout", None)}"', "debug")
+        command = getattr(self, "command", None)
+        check = getattr(self, "check", None)
+        expected = getattr(self, "expected", None)
+        timeout = getattr(self, "timeout", None)
+        command_type = getattr(self, "type", None)
+        overwrite = getattr(self, "overwrite", None)
+        wait = getattr(self, "wait", None)
+        logger.log(f'Command is "{command}", check is "{check}", expected is "{expected}", timeout is "{timeout}", wait is "{wait}"', "debug")
         if not self.push_files():
             return False
         ret = adb.run(
-            command=getattr(self, "command", None),
-            check=getattr(self, "check", None),
-            expected=getattr(self, "expected", None),
+            command=command,
+            check=check,
+            expected=expected,
             parameters=parameters,
-            timeout=getattr(self, "timeout", None),
-            command_type=getattr(self, "type", None),
+            timeout=timeout,
+            command_type=command_type,
             files=self.files,
-            overwrite=getattr(self, "overwrite", None)
+            overwrite=overwrite
         )
+        if wait:
+            logger.log(f'Waiting {wait} seconds for completion', "plainSpaced")
+            time.sleep(wait)
         return ret
 
     def push_files(self):
@@ -109,19 +134,29 @@ class SubModule:
         return True
 
 class Module:
-    def __init__(self, submodules):
+    def __init__(self, modules, name, submodules):
+        self.name = name
+        self.modules = modules
         self.submodules = submodules
 
     def run(self, submodule_name: str, parameters: Optional[list[str]]):
-        logger.log(f"Attempting to run {submodule_name}", "debug")
+        logger.log(f"Attempting to run {self.name}.{submodule_name}", "debug")
         submodule = self.get_submodule(submodule_name)
         if not submodule:
             logger.log(f'Submodule "{submodule_name}" not found!', "failure")
             return False
-        if submodule.depends and len(submodule.depends.split(".")) < 2:
-            ret = self.run(submodule.depends, None)
-            if not ret:
-                return ret
+        if submodule.depends:
+            depends = submodule.depends.split(".")
+            if len(depends) < 2: # single word in depends, external module
+                logger.log(f"{self.name}.{submodule_name} depends on {submodule.parent_name}.{submodule.depends}!", "debug")
+                ret = self.run(submodule.depends, None)
+                if not ret:
+                    return ret
+            if len(depends) > 1: # multi words in depends, local module
+                logger.log(f"{self.name}.{submodule_name} depends on {submodule.depends}!", "debug")
+                ret = self.modules.run(depends[0], depends[1], None)
+                if not ret:
+                    return ret
         return submodule.run(parameters)
 
     def get_submodule(self, name: str):

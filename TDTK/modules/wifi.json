@@ -19,5 +19,11 @@
         "expected": "Wifi is connected to",
         "depends": "enable",
         "timeout": 10
+    },
+    "speedtest": {
+        "command": "am start -a android.intent.action.VIEW -d https://fast.com",
+        "expected": 0,
+        "wait": 10,
+        "depends": "device.unlock"
     }
 }
