@@ -3,8 +3,8 @@ import os
 import time
 from pathlib import Path
 from typing import Optional
-from TDTK.logger import Logger
-from TDTK.adb import ADB
+from TDTK.core.logger import Logger
+from TDTK.core.adb import ADB
 from enum import Enum
 
 logger = Logger(None)

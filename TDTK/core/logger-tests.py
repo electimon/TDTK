@@ -1,4 +1,4 @@
-from TDTK.logger import log
+from TDTK.core.logger import log
 
 # Tests that the function logs a message with no type specified.  
 class Tests:

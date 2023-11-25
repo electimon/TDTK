@@ -1,5 +1,5 @@
 import argparse
-from TDTK.test_runner import TestRunner
+from TDTK.core.test_runner import TestRunner
 
 def main():
     parser = argparse.ArgumentParser(description="TerraDebugToolKit (TDTK) - CLI Tool")

@@ -1,4 +1,4 @@
-from TDTK.tests import Tests
+from TDTK.core.tests import Tests
 class Testing:
     # Tests that the wifi connection function successfully connects to a valid network.  
     def test_wifi_connection_successful(self, mocker):

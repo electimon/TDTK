@@ -1,5 +1,5 @@
 import adbutils, time
-from TDTK.functions import wifi
+from TDTK.core.functions import wifi
 
 class Tests:
     available_tests = [

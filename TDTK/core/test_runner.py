@@ -1,8 +1,8 @@
 import json
 import sys
-from TDTK.logger import Logger
-from TDTK.modules import Modules, Module
-from TDTK.adb import ADB
+from TDTK.core.logger import Logger
+from TDTK.core.modules import Modules, Module
+from TDTK.core.adb import ADB
 
 class TestRunner:
     def __init__(self, args):

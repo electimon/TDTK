@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 import adbutils
-from TDTK.logger import Logger
+from TDTK.core.logger import Logger
 import time
 from pathlib import Path
 logger = Logger(None)
