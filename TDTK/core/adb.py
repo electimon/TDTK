@@ -20,7 +20,6 @@ class ADB:
         self.adb_client = adbutils.AdbClient(host="127.0.0.1", port=5037)
         devices = self.adb_client.device_list()
         self.device = devices[0] if devices else None
-        self.indicator = Indicator()
         
     def run(
         self,
@@ -57,7 +56,6 @@ class ADB:
             command = f"{command} {' '.join(parameters)}"
         logger.log(f"Running command: {command}", type="debug")
         logger.log(f"Parameters: {parameters}", type="debug")
-        self.indicator.start()
         if repeat:
             for _ in range(repeat):
                 logger.log(f"Command: {command}, in iteration!", type="debug")
@@ -70,7 +68,6 @@ class ADB:
 
     def run_command(self, command: str, check: str, expected: str, timeout: int, silent: bool) -> bool:
         ret = self.device.shell2(command)
-        self.indicator.stop()
         if not silent:
             logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="summarySpaced")
         else:
