@@ -1,0 +1,11 @@
+[
+  {
+    "test_name": "Wi-Fi Connection",
+    "module": "wifi.connect",
+    "parameters": [
+      "TP-Link_Chi_5G",
+      "wpa2",
+      "6021204jd"
+    ]
+  }
+]

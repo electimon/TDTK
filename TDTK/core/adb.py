@@ -41,6 +41,9 @@ class ADB:
         if command_type == "app-install":
             logger.log(f"Running install-app routine, files are {files}", type="debug")
             return self.run_app_install(files[0])
+        if command_type == "push-exec":
+            logger.log(f"Running push-exec routine, files are {files}", type="debug")
+            return self.run_push_exec(files)
         if not timeout:
             timeout = 2
         if not command:
@@ -56,6 +59,14 @@ class ADB:
             ret = self.check(check, expected, timeout)
             return ret
         return self.acceptable(ret, expected)
+
+    def run_push_exec(self, files: list[str]) -> bool:
+        for file in files:
+            if self.push(filesPath / file, f"/data/local/tmp/{file}") <= 0:
+                logger.log(f"Failed to push file {file}!", type="plainFailure")
+                return False
+        logger.log(f"Pushed files successfully!", type="debug")
+        return True
 
     def run_app_install(
         self,
@@ -208,11 +219,18 @@ class ADB:
             else:
                 return expected == ret        
 
-    def push(self, file_name) -> int:
-        ret = self.device.sync.push(
-            file_name,
-            f"/sdcard/TDTK/{file_name.stem}{file_name.suffix}"
-        )
+    def push(self, file_name, dest=None) -> int:
+        logger.log(f"Pushing file {file_name} to {dest}", type="debug")
+        if not dest:
+            ret = self.device.sync.push(
+                file_name,
+                f"/sdcard/TDTK/{dest}/{file_name.stem}{file_name.suffix}"
+            )
+        else:
+            ret = self.device.sync.push(
+                file_name,
+                dest
+            )
         return ret
     
     def cleanup(self) -> int:

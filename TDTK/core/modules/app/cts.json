@@ -1,0 +1,14 @@
+{
+    "launch": {
+        "command": "am start -n com.android.cts.verifier/com.android.cts.verifier.CtsVerifierActivity",
+        "parameters": [],
+        "expected": "",
+        "depends": "device.unlock"
+    },
+    "install": {
+        "type": "app-install",
+        "parameters": [],
+        "expected": "",
+        "files": ["CtsVerifier-a13r5.apk"]
+    }
+}

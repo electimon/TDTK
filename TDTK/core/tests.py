@@ -1,4 +1,4 @@
-import adbutils, time
+import adbutils
 from TDTK.core.functions import wifi
 
 class Tests:

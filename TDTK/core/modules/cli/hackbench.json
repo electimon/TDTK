@@ -1,0 +1,14 @@
+{
+    "run": {
+        "command": "/data/local/tmp/hackbench -pTl 4000",
+        "parameters": [],
+        "expected": "",
+        "depends": "push"
+    },
+    "push": {
+        "type": "push-exec",
+        "parameters": [],
+        "expected": "",
+        "files": ["hackbench"]
+    }
+}

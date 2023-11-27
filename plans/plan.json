@@ -1,0 +1,35 @@
+[
+  {
+    "test_name": "Wi-Fi Connection",
+    "module": "wifi.connect",
+    "parameters": [
+      "TP-Link_Chi_5G",
+      "wpa2",
+      "6021204jd"
+    ]
+  },
+  {
+    "test_name": "Install CQA Test",
+    "module": "app.cqa.install"
+  },
+  {
+    "test_name": "MP3 Playback",
+    "module": "audio.playback.mp3"
+  },
+  {
+    "test_name": "Install Device Info App",
+    "module": "app.deviceinfo.install"
+  },
+  {
+    "test_name": "Install CTS Verifier",
+    "module": "app.cts.install"
+  },
+  {
+    "test_name": "Launch CTS Verifier",
+    "module": "app.cts.launch"
+  },
+  {
+    "test_name": "Run Hackbench",
+    "module": "cli.hackbench.run"
+  }
+]

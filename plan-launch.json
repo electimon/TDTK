@@ -1,6 +1,0 @@
-[
-  {
-    "test_name": "Launch CQA Test",
-    "module": "app.cqa.launch"
-  }
-]

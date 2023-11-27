@@ -99,11 +99,11 @@ class SubModule:
         check = getattr(self, "check", None)
         expected = getattr(self, "expected", None)
         timeout = getattr(self, "timeout", None)
-        command_type = getattr(self, "type", None)
+        command_type = getattr(self, "type", "")
         overwrite = getattr(self, "overwrite", None)
         wait = getattr(self, "wait", None)
         logger.log(f'Command is "{command}", check is "{check}", expected is "{expected}", timeout is "{timeout}", wait is "{wait}"', "debug")
-        if not self.push_files():
+        if not "push" in command_type and not self.push_files():
             return False
         ret = adb.run(
             command=command,

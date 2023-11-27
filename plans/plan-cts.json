@@ -1,0 +1,10 @@
+[
+  {
+    "test_name": "Install CTS Verifier",
+    "module": "app.cts.install"
+  },
+  {
+    "test_name": "Launch CTS Verifier",
+    "module": "app.cts.launch"
+  }  
+]
