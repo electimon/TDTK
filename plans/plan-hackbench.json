@@ -1,6 +1,6 @@
 [
     {
-        "test_name": "Run Hackbench",
+        "test_name": "Hackbench",
         "module": "cli.hackbench.run"
     }
 ]

@@ -93,6 +93,7 @@ class SubModule:
         self.depends = data.get("depends")
         self.files = [Path(file) for file in data.get("files", [])]  # Store multiple files as a list of Paths
         self.parent_name = name
+        self.repeat = data.get("repeat", 0)
 
     def run(self, parameters: Optional[list[str]]):
         command = getattr(self, "command", None)
@@ -103,7 +104,15 @@ class SubModule:
         overwrite = getattr(self, "overwrite", None)
         wait = getattr(self, "wait", None)
         silent = getattr(self, "silent", True)
-        logger.log(f'Command is "{command}", check is "{check}", expected is "{expected}", timeout is "{timeout}", wait is "{wait}", silent is "{silent}"', "debug")
+        logger.log(f'''
+                   Command is "{command}",
+                   check is "{check}",
+                   expected is "{expected}",
+                   timeout is "{timeout}",
+                   wait is "{wait}",
+                   silent is "{silent}",
+                   repeat is "{self.repeat}"
+        ''', "debug")
         if not "push" in command_type and not self.push_files():
             return False
         ret = adb.run(
@@ -115,7 +124,8 @@ class SubModule:
             command_type=command_type,
             files=self.files,
             overwrite=overwrite,
-            silent=silent
+            silent=silent,
+            repeat=self.repeat
         )
         if wait:
             logger.log(f'Waiting {wait} seconds for completion', "plainSpaced")
@@ -161,5 +171,5 @@ class Module:
                     return ret
         return submodule.run(parameters)
 
-    def get_submodule(self, name: str):
+    def get_submodule(self, name: str) -> Optional[SubModule]:
         return self.submodules.get(name, None)

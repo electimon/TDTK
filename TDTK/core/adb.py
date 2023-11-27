@@ -2,6 +2,7 @@ import os
 from typing import Optional
 import adbutils
 from TDTK.core.logger import Logger
+from TDTK.core.indicator import Indicator
 import time
 from pathlib import Path
 logger = Logger(None)
@@ -19,6 +20,7 @@ class ADB:
         self.adb_client = adbutils.AdbClient(host="127.0.0.1", port=5037)
         devices = self.adb_client.device_list()
         self.device = devices[0] if devices else None
+        self.indicator = Indicator()
         
     def run(
         self,
@@ -31,6 +33,7 @@ class ADB:
         timeout: Optional[int] = 2,
         overwrite: Optional[bool] = False,
         silent: Optional[bool] = True,
+        repeat: Optional[int] = 0,
     ) -> bool:
         logger.log(f"adb run type is {command_type}", type="debug")
         if not self.root():
@@ -52,9 +55,21 @@ class ADB:
             return False
         if parameters:
             command = f"{command} {' '.join(parameters)}"
+        logger.log(f"Running command: {command}", type="debug")
         logger.log(f"Parameters: {parameters}", type="debug")
+        self.indicator.start()
+        if repeat:
+            for _ in range(repeat):
+                logger.log(f"Command: {command}, in iteration!", type="debug")
+                ret = self.run_command(command, check, expected, timeout, silent)
+                if not ret:
+                    return False
+                return ret
+        else:
+            return self.run_command(command, check, expected, timeout, silent)
+
+    def run_command(self, command: str, check: str, expected: str, timeout: int, silent: bool) -> bool:
         ret = self.device.shell2(command)
-        logger.log(f"Command: {command}", type="debug")
         if not silent:
             logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="summarySpaced")
         else:
@@ -62,6 +77,7 @@ class ADB:
         if check:
             ret = self.check(check, expected, timeout)
             return ret
+        self.indicator.stop()
         return self.acceptable(ret, expected)
 
     def run_push_exec(self, files: list[str]) -> bool:

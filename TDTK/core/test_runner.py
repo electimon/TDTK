@@ -63,8 +63,7 @@ class TestRunner:
 
     def validate_test(self, test: dict):
         name = test.get("test_name", None)
-        module = test.get("module", None)
-        self.logger.log(f'Running test: "{name}"', "section")
+        module: Module = test.get("module", None)
 
         if not name:
             self.logger.log("Test is missing the 'test_name' field!", type="failure")
@@ -94,6 +93,13 @@ class TestRunner:
             self.logger.log(f"Submodule '{submodule_name}' not found in module '{module_name}' for test '{name}'!", type="failure")
             self.errors += 1
             return False
+
+        repeat = submodule.repeat+1 if submodule.repeat > 0 else 0
+        self.logger.log(f"Repeat: {repeat}", "debug")
+        if repeat > 0:
+            self.logger.log(f'Running test "{name}" {repeat} times', "section")
+        else:
+            self.logger.log(f'Running test: "{name}"', "section")
 
         self.logger.log(f"Test '{name}' in the test plan has been deemed valid!", type="debug")
         return True
