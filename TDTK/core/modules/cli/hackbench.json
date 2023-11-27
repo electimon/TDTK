@@ -3,7 +3,8 @@
         "command": "/data/local/tmp/hackbench -pTl 4000",
         "parameters": [],
         "expected": "",
-        "depends": "push"
+        "depends": "push",
+        "silent": false
     },
     "push": {
         "type": "push-exec",

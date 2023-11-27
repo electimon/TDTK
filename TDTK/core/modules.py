@@ -102,7 +102,8 @@ class SubModule:
         command_type = getattr(self, "type", "")
         overwrite = getattr(self, "overwrite", None)
         wait = getattr(self, "wait", None)
-        logger.log(f'Command is "{command}", check is "{check}", expected is "{expected}", timeout is "{timeout}", wait is "{wait}"', "debug")
+        silent = getattr(self, "silent", True)
+        logger.log(f'Command is "{command}", check is "{check}", expected is "{expected}", timeout is "{timeout}", wait is "{wait}", silent is "{silent}"', "debug")
         if not "push" in command_type and not self.push_files():
             return False
         ret = adb.run(
@@ -113,7 +114,8 @@ class SubModule:
             timeout=timeout,
             command_type=command_type,
             files=self.files,
-            overwrite=overwrite
+            overwrite=overwrite,
+            silent=silent
         )
         if wait:
             logger.log(f'Waiting {wait} seconds for completion', "plainSpaced")

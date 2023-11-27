@@ -30,6 +30,7 @@ class ADB:
         files: Optional[list[str]],
         timeout: Optional[int] = 2,
         overwrite: Optional[bool] = False,
+        silent: Optional[bool] = True,
     ) -> bool:
         logger.log(f"adb run type is {command_type}", type="debug")
         if not self.root():
@@ -54,7 +55,10 @@ class ADB:
         logger.log(f"Parameters: {parameters}", type="debug")
         ret = self.device.shell2(command)
         logger.log(f"Command: {command}", type="debug")
-        logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="debug")
+        if not silent:
+            logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="summarySpaced")
+        else:
+            logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="debug")
         if check:
             ret = self.check(check, expected, timeout)
             return ret
