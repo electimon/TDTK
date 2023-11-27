@@ -1,6 +1,11 @@
 [
     {
         "test_name": "Hackbench",
-        "module": "cli.hackbench.run"
+        "module": "cli.hackbench.run",
+        "repeat": 0
+    },
+    {
+        "test_name": "Install CQA Test",
+        "module": "app.cqa.install"
     }
 ]

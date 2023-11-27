@@ -3,6 +3,8 @@ from progress import SHOW_CURSOR
 from multiprocessing import Process, Pipe
 import time
 
+# DONT LOOK AT THIS CODE, ITS A MESS AND I KNOW IT BUT IT WORKS SO I DONT CARE :D
+
 class TDTKSpinner(Spinner):
     done = False
 
@@ -30,28 +32,33 @@ class Indicator:
     def __init__(self) -> None:
         self.spinner = TDTKSpinner('')
         self.run = False
+        self.process_started = False  # New flag to track whether the process is started
         self.parent_conn, self.child_conn = Pipe()
         self._process = Process(target=self.next, args=(self.child_conn,), daemon=True)
 
     def start(self):
         self.run = True
-        self._process.start()
+        self.spinner.done = False  # Reset the done attribute
+        if not self.process_started:
+            self._process.start()
+            self.process_started = True
+        else:
+            self.parent_conn.send("start")
 
     def stop(self):
+        self.spinner.done = True
         self.spinner.stop()
         self.run = False
-        self.parent_conn.send("stop")  # Signal the child process to stop
-        self._process.join()  # Wait for the process to finish before returning
-        # Clear the stdout line
+        self.parent_conn.send("stop")
 
     def next(self, conn):
         while self.run:
-            self.spinner.next()
             time.sleep(0.1)  # Adjust the sleep time based on your needs
+            if not self.spinner.done:
+                self.spinner.next()
             if conn.poll():  # Check if there's a message from the parent process
                 message = conn.recv()
                 if message == "stop":
                     break
-        self.spinner.done = True
-        self.spinner.next()
-        conn.close()
+                elif message == "start":
+                    self.process_started = True

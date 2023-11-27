@@ -70,6 +70,7 @@ class ADB:
 
     def run_command(self, command: str, check: str, expected: str, timeout: int, silent: bool) -> bool:
         ret = self.device.shell2(command)
+        self.indicator.stop()
         if not silent:
             logger.log(f"Command Output: {ret.output if ret.output else ret.returncode}", type="summarySpaced")
         else:
@@ -77,7 +78,6 @@ class ADB:
         if check:
             ret = self.check(check, expected, timeout)
             return ret
-        self.indicator.stop()
         return self.acceptable(ret, expected)
 
     def run_push_exec(self, files: list[str]) -> bool:

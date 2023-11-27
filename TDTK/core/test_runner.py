@@ -59,7 +59,10 @@ class TestRunner:
     def run_tests(self):
         for test in self.test_plan:
             if self.validate_test(test):
-                self.run_test(test)
+                repeat = test.get("repeat", 0)
+                for i in range(repeat+1 if repeat > 0 else 1):
+                    self.logger.log(f'Running iteration: {i} for test "{test.get("test_name", None)}"', "subsection")
+                    self.run_test(test)
 
     def validate_test(self, test: dict):
         name = test.get("test_name", None)
