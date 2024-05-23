@@ -237,13 +237,14 @@ class ADB:
                 return expected == ret        
 
     def push(self, file_name, dest=None) -> int:
-        logger.log(f"Pushing file {file_name} to {dest}", type="debug")
         if not dest:
+            logger.log(f"Pushing file {file_name} to /sdcard/TDTK/{file_name.stem}{file_name.suffix}", type="debug")
             ret = self.device.sync.push(
                 file_name,
-                f"/sdcard/TDTK/{dest}/{file_name.stem}{file_name.suffix}"
+                f"/sdcard/TDTK/{file_name.stem}{file_name.suffix}"
             )
         else:
+            logger.log(f"Pushing file {file_name} to {dest}", type="debug")
             ret = self.device.sync.push(
                 file_name,
                 dest
